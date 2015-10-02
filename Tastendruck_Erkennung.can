@@ -1,0 +1,91 @@
+/*@!Encoding:1252*/
+variables
+{
+  int counter, counter2, zustand_sitzheizung;
+  char Warnblinker_state;       
+  mstimer timer_340ms;
+  message Klemmenstatus KS;
+  message TIM Struppi;
+}
+
+on start
+{
+  KS.Klemmeninformation=0x4;
+  output(KS);
+
+  Struppi.TurnLampONDur = 0x22;
+  
+  setSignal(ISw_Stat, 4);
+  sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 100);
+  sysSetVariableFloat(sysvar::IO::IOPiggy1::PWMOutFreq, 100);
+}
+
+on signal EF_Sw_Psd     
+{
+  counter++;
+  if (counter%2 == 1) {
+    if(Warnblinker_state==0) {
+      Struppi.Turnlnd_LT_ON = 0x1;
+      Struppi.Turnlnd_RT_ON = 0x1;
+      Warnblinker_state=1;
+      setTimer(timer_340ms, 340);
+    }
+    else {
+      cancelTimer(timer_340ms);
+      setSignal(EF_Actv, 0);
+      Struppi.Turnlnd_RT_ON = 0;
+      Struppi.Turnlnd_LT_ON = 0;
+      output(Struppi);
+      Warnblinker_state=0;
+      counter2 = 0;
+    }
+  }
+}
+
+on signal SeatHt_FL_Pos_Rq
+{
+  zustand_sitzheizung++;
+  switch(zustand_sitzheizung) {
+    case 1:   setSignal(SeatHt_FL_Stat, 3);
+              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 0);
+              break;
+    case 3:   setSignal(SeatHt_FL_Stat, 2);
+              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 30);
+              break;
+    case 5:   setSignal(SeatHt_FL_Stat, 1);
+              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 70);
+              break;
+    case 7:   setSignal(SeatHt_FL_Stat, 0);
+              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 100);
+              break;
+    case 8:   zustand_sitzheizung = 0;
+              break;
+    default:  break;
+  }
+}
+
+void Warnblinker_on (void)
+{
+  setSignal(EF_Actv, 1);  
+}
+void Warnblinker_off (void)
+{
+  setSignal(EF_Actv, 0); 
+}
+
+
+on timer timer_340ms
+{
+  counter2++;
+  if (counter2 % 2 == 1) {
+    output(Struppi);
+  }
+    
+  if(getSignal(EF_Actv)==0) { 
+	Warnblinker_on();
+  }
+  else { Warnblinker_off(); }
+  
+  output(KS);
+  setTimer(timer_340ms, 340);
+}
