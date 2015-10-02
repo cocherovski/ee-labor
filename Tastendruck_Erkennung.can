@@ -1,7 +1,7 @@
 /*@!Encoding:1252*/
 variables
 {
-  int counter, counter2, zustand_sitzheizung;
+  int counter, zustand_sitzheizung;
   char Warnblinker_state;       
   mstimer timer_340ms;
   message Klemmenstatus KS;
@@ -37,7 +37,6 @@ on signal EF_Sw_Psd
       Struppi.Turnlnd_LT_ON = 0;
       output(Struppi);
       Warnblinker_state=0;
-      counter2 = 0;
     }
   }
 }
@@ -50,10 +49,10 @@ on signal SeatHt_FL_Pos_Rq
               sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 0);
               break;
     case 3:   setSignal(SeatHt_FL_Stat, 2);
-              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 30);
+              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 40);
               break;
     case 5:   setSignal(SeatHt_FL_Stat, 1);
-              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 70);
+              sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 60);
               break;
     case 7:   setSignal(SeatHt_FL_Stat, 0);
               sysSetVariableFloat(sysvar::IO::IOPiggy1::PWM, 100);
@@ -76,13 +75,9 @@ void Warnblinker_off (void)
 
 on timer timer_340ms
 {
-  counter2++;
-  if (counter2 % 2 == 1) {
-    output(Struppi);
-  }
-    
   if(getSignal(EF_Actv)==0) { 
 	Warnblinker_on();
+	output(Struppi);
   }
   else { Warnblinker_off(); }
   
